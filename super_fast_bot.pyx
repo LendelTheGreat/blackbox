@@ -2,13 +2,9 @@ import interface as bbox
 cimport interface as bbox
 import numpy as np
 import time
-from random import *
-from libc.math cimport sqrt
 
 cdef float c[4][36]
 cdef float fc[4]
-cdef float alpha = 0.1
-cdef float max = 10.0
 
 cdef int get_action_by_state_fast(float* state):
   cdef:
@@ -57,28 +53,6 @@ cdef float calc_reg_for_action(int action, float* state):
     sum = sum + c[action][i] * state[i]
   return sum + fc[action]
   
-cdef int update_reg_coefs(int action, float* state, float score):
-  cdef:
-    float predicted_score = 0
-    
-  predicted_score = calc_reg_for_action(action, state)
-  
-  for i in xrange(36):
-    c[action][i] = c[action][i] + alpha * (score - predicted_score) * state[i]
-    if c[action][i] > max:
-      c[action][i] = max
-    elif c[action][i] < -max:
-      c[action][i] = -max
-  
-  fc[action] = fc[action] + alpha * (score - predicted_score)
-  if fc[action] > max:
-    fc[action] = max
-  elif fc[action] < -max:
-    fc[action] = -max
-      
-      
-  return 0
-  
 def save_coefs():
   with open('coefs.txt', 'w') as file:
     for i in xrange(4):
@@ -91,42 +65,19 @@ def run_bbox():
         float* state
         int action, has_next = 1
     
-    best = 2882
-    
     for i in xrange(1):
       if i % 10 == 0:
         print i
       start = time.time()
       prepare_bbox()
       load_regression_coefs("best_overwrite.txt")
-      score = 0
    
       while has_next:
           state = bbox.c_get_state()
           action = get_action_by_state_fast(state)
           has_next = bbox.c_do_action(action)
-          
-          
-          
-          # reward = bbox.c_get_score() - score
-          # score = bbox.c_get_score()
-          # update_reg_coefs(action, state, reward)
-          
-          
-          
-   
+
       end = time.time()
       print 'Time: ' + str(end - start)
-      score = bbox.c_get_score()
-      if score > best:
-        best = score
-        print '###################### BEST: ' + str(best)
-        
-      #print 'Score: ' + str(score)
       bbox.finish()
-      has_next = 1
-      
-    print 'BEST: ' + str(best)
-   
-        
-    
+      has_next = 1   
