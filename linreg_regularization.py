@@ -9,11 +9,11 @@ theano.config.floatX = 'float32'
 n_features = 36
 n_actions = 4
 max_time = -1
-future_steps = 100
-action_steps = 10
+future_steps = 5
+action_steps = 5
 
-lambda1 = 0.01
-lambda2 = 0.001
+lambda1 = 0.00005
+lambda2 = 0.0002
  
 def prepare_bbox():
 	global n_features, n_actions, max_time

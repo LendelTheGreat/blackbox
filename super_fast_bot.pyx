@@ -2,6 +2,7 @@ import interface as bbox
 cimport interface as bbox
 import numpy as np
 import time
+import cPickle
 
 cdef float c[4][36]
 cdef float fc[4]
@@ -72,12 +73,21 @@ def run_bbox():
       prepare_bbox()
       load_regression_coefs("best_overwrite.txt")
    
+      scores = []
       while has_next:
           state = bbox.c_get_state()
           action = get_action_by_state_fast(state)
           has_next = bbox.c_do_action(action)
+          scores.append(bbox.get_score())
 
       end = time.time()
       print 'Time: ' + str(end - start)
+      
+      with open('scores_linreg.bin','wb') as fp:
+        cPickle.dump(scores,fp)
+        
+      
+        
       bbox.finish()
+      
       has_next = 1   
