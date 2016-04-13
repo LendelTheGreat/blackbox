@@ -136,12 +136,12 @@ def run_bbox():
   has_next = 1
   
   for t in xrange(10):
-    print '############ Iteration: {}  Score: {} ############'.format(t, score)
     if t % 2 == 0:
       training_set = 'train'
     else:
       training_set = 'test'
-    print 'Training on {} set'.format(training_set)
+    print '############ Iteration: {}  Score: {} Training set: {} ############'.format(t, score, training_set)
+    
     for i in xrange(4):
       for j in xrange(36):
         start = time.time()
@@ -164,7 +164,7 @@ def run_bbox():
           has_next = 1
         
         print 'Time: ' + str(end - start)
-        print 'I{} ##### CC action: {}   state: {}  grad: {} ######'.format(t, i, j, c_grads[i][j])
+        print '##### I{} CC action: {}   state: {}  grad: {} ######'.format(t, i, j, c_grads[i][j])
         #print 'Score diff: ' + str(score_diff)
     
     for i in xrange(4):
@@ -189,7 +189,7 @@ def run_bbox():
           has_next = 1	
         
         print 'Time: ' + str(end - start)
-        print 'I{} ##### C action: {}   state: {}  grad: {} ######'.format(t, i, j, c_grads[i][j])
+        print '##### I{} C action: {}   state: {}  grad: {} ######'.format(t, i, j, c_grads[i][j])
         #print 'Score diff: ' + str(score_diff)
     
     
@@ -214,7 +214,7 @@ def run_bbox():
         has_next = 1
         
       print 'Time: ' + str(end - start)
-      print 'I{} ##### FC action: {}  grad: {} ######'.format(t, i, fc_grads[i])
+      print '##### I{} FC action: {}  grad: {} ######'.format(t, i, fc_grads[i])
       #print 'Score diff: ' + str(score_diff)
     
     scores.append(score)
