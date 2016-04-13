@@ -67,12 +67,12 @@ def run_bbox():
 
   while has_next:
     state = bbox.get_state()
-    time = bbox.get_time()
-    if time % 100000 == 0:
-      print '{0:.2f}%'.format(100.0 * time/max_time)
+    t = bbox.get_time()
+    if t % 100000 == 0:
+      print '{0:.2f}%'.format(100.0 * t/max_time)
     action = predict(state)
     has_next = bbox.do_action(action)
-  print 'Took', time.time() - start, 's'
+  print 'Took {0:.2f} s'.format(time.time() - start)
   bbox.finish(verbose=1)
  
  
