@@ -3,99 +3,76 @@ from theano import tensor as T
 import numpy as np
 import interface as bbox
 import cPickle 
+import time
 
 theano.config.floatX = 'float32' 
 n_features = 36
 n_actions = 4
 max_time = -1
-future_steps = 100
- 
-def prepare_bbox():
-	global n_features, n_actions, max_time
- 
-	if bbox.is_level_loaded():
-		bbox.reset_level()
-	else:
-		bbox.load_level("../levels/train_level.data", verbose=1)
-		n_features = bbox.get_num_of_features()
-		n_actions = bbox.get_num_of_actions()
-		max_time = bbox.get_max_time()
- 
+
+def prepare_bbox(training_set='train'):
+  """
+  training_set is either 'test' or 'train'
+  """ 
+  global n_features, n_actions
+  bbox.load_level('../levels/{}_level.data'.format(training_set), verbose=0)
+  n_features = bbox.get_num_of_features()
+  n_actions = bbox.get_num_of_actions()
+  
  
 def load_regression_coefs(filename):
 	global coefs
 	coefs = np.loadtxt(filename).reshape(n_actions, n_features + 1)
 
-def calc_best_action_using_checkpoint():
-  checkpoint_id = bbox.create_checkpoint()
-  action_scores = []
-
-  for action in range(n_actions):
-    for _ in range(future_steps):
-      bbox.do_action(action)
-		
-    action_scores.append(bbox.get_score())
-
-    bbox.load_from_checkpoint(checkpoint_id)
-
-  return action_scores
-
+def load_squared_coefs(filename):
+  n_actions = 4
+  n_features = 36
   
+  coefs = np.loadtxt(filename).reshape(n_actions, 2*n_features + 1)
+  free_coefs = coefs[:,-1]
+  coefs = coefs[:,:-1]
+  
+  c = np.zeros((n_actions,n_features))
+  cc = np.zeros((n_actions,n_features))
+  fc = np.zeros((1,n_actions))
+  
+  for i in xrange(n_actions):
+    for j in xrange(2*n_features):
+      if j % 2 == 0:
+        c[i][j/2] = coefs[i][j]
+      else:
+        cc[i][(j-1)/2] = coefs[i][j]
+    fc[0,i] = free_coefs[i]
+  return c,cc,fc
  
 def run_bbox():
   has_next = 1
-	
   prepare_bbox()
-  load_regression_coefs("best_overwrite.txt")
-  
-  def model(X, w):
-    py_x = T.nnet.softmax(T.dot(w, X))
-    return py_x
-  
-  def RMSprop(cost, params, lr=0.001, rho=0.9, epsilon=1e-6):
-    grads = T.grad(cost=cost, wrt=params)
-    updates = []
-    for p, g in zip(params, grads):
-      acc = theano.shared(p.get_value() * 0.)
-      acc_new = rho * acc + (1 - rho) * g ** 2
-      gradient_scaling = T.sqrt(acc_new + epsilon)
-      g = g / gradient_scaling
-      updates.append((acc, acc_new))
-      updates.append((p, p - lr * g))
-    return updates
-    
+  c,cc,fc = load_squared_coefs("coefs_squared_test_after10.txt")
+  max_time = bbox.get_max_time()
   print 'Compiling Theano graph...'
+  def model(X, w, w2, b):
+    sum = T.dot(w, X) + T.dot(w2, X*X) + b
+    predicted_action = T.argmax(sum)
+    return predicted_action
   X = T.vector()
-  w = theano.shared(np.asarray(coefs, dtype=theano.config.floatX))
-  py_x = model(X, w)
-  a = T.argmax(py_x)
-  
-  Y = T.vector()
-  params = [w]
-  cost = T.mean(T.nnet.categorical_crossentropy(py_x, T.nnet.softmax(Y))) 
-  updates = RMSprop(cost, params)
-  
-  train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_input_downcast=True)
-  predict = theano.function(inputs=[X], outputs=a, allow_input_downcast=True)
-  t_state = np.ones(37) 
-  
-  
-  print 'Done.' 
+  w = theano.shared(np.asarray(c, dtype=theano.config.floatX))
+  w2 = theano.shared(np.asarray(cc, dtype=theano.config.floatX))
+  b = theano.shared(np.asarray(fc, dtype=theano.config.floatX))
+  predicted_action = model(X, w, w2, b)
+  params = [w, w2, b] 
+  predict = theano.function(inputs=[X], outputs=predicted_action, allow_input_downcast=True)
+  print 'Done. Progress:' 
+  start = time.time()
 
   while has_next:
     state = bbox.get_state()
-    t_state = np.append(state, [1])
-    time = bbox.get_time()
-    if time % 10000 == 0:
-      print time
-    action_scores = calc_best_action_using_checkpoint()
-    cost = train(t_state, action_scores)
-    action = predict(t_state)
-    for _ in range(1):
-      has_next = bbox.do_action(action)
-  
-  with open('LearnedParams.bin','wb') as fp:
-    cPickle.dump(params,fp)
+    t = bbox.get_time()
+    if t % 100000 == 0:
+      print '{0:.2f}%'.format(100.0 * t/max_time)
+    action = predict(state)
+    has_next = bbox.do_action(action)
+  print 'Took {0:.2f} s'.format(time.time() - start)
   bbox.finish(verbose=1)
  
  
