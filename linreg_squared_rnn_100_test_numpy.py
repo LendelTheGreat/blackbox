@@ -9,15 +9,15 @@ cc = np.zeros((4, 36))
 c = np.zeros((4, 36))
 fc = np.zeros(4)
 ac_memory_coefs = np.zeros((4,4))
+memory_length = 5
 
-
-ac_memory = np.zeros((4,100))
+ac_memory = np.zeros((4,1258935))
 last_actions = np.zeros(4)
 
-def get_action_by_state_fast(state):
+def get_action_by_state_fast(state, level):
   best_act = -1
   best_val = -1e9
-  max_a = max_ac_memory()
+  max_a = max_ac_memory(level)
   for act in xrange(n_actions):
     val = calc_reg_for_action(act, state, max_a)
     if val > best_val:
@@ -28,7 +28,7 @@ def get_action_by_state_fast(state):
     last_actions[act] = 0
   last_actions[best_act] = 1
   
-  update_ac_memory()
+  update_ac_memory(level)
   
   return best_act
   
@@ -59,26 +59,23 @@ def load_squared_coefs(filename):
         cc[i][(j-1)/2] = coefs[i][j]
     fc[i] = free_coefs[i]
   
-def update_ac_memory():
+def update_ac_memory(level):
   """
   Appends last action into memory 
   """
   global ac_memory
-  global last_actions
-  ac_memory[:,0:99] = ac_memory[:,1:100]
-  ac_memory[:,99] = last_actions
+  ac_memory[:,level] = last_actions
 
-
-def max_ac_memory():
+def max_ac_memory(level):
   """
-  @Arg: last action
+  @Arg: level
   Calculates which action occured most times in last 100 rounds
   """
   sum = np.zeros(4)
   max_a = 0
   for i in xrange(4):
-    sum[i] = np.sum(ac_memory[i,:])
-    if max_a < sum[i]:
+    sum[i] = np.sum(ac_memory[i,level:level+memory_length])
+    if sum[max_a] < sum[i]:
       max_a = i
   return max_a
 
@@ -100,7 +97,7 @@ def run_bbox():
     for j in xrange(4):
       ac[i][j] = loaded_ac[i][j]
     
-  with open('acs_mem_2.bin','rb') as fp:
+  with open('acs_mem_3.bin','rb') as fp:
     loaded_ac_m = cPickle.load(fp)
   
   global ac_memory_coefs
@@ -113,7 +110,8 @@ def run_bbox():
   prepare_bbox()
   while has_next:
     state = bbox.get_state()
-    action = get_action_by_state_fast(state)
+    level = bbox.get_time()
+    action = get_action_by_state_fast(state, level)
     has_next = bbox.do_action(action)
   bbox.finish()
   print time.time() - start

@@ -7,10 +7,10 @@ from libc.math cimport sqrt, fabs
 import cPickle
 
 recurrent_deep_iterations = 5
-
 cdef float last_actions[4]
 
-cdef float ac_memory[4][100]
+cdef int memory_length = 5
+cdef float ac_memory[4][1258935]
 cdef float ac_memory_coefs[4][4]
 cdef float ac_memory_grads[4][4]
 
@@ -41,7 +41,7 @@ for i in xrange(4):
 # Initializes memory (array of last 100 actions) as zeros
 # and corresponding coeffs & grads
 for i in xrange(4):
-  for j in xrange(100):
+  for j in xrange(1258935):
     ac_memory[i][j] = 0
   for j in xrange(4):
     ac_memory_grads[i][j] = 0.25
@@ -50,8 +50,7 @@ for i in xrange(4):
     else:
       ac_memory_coefs[i][j] = 0.0
 
-
-cdef int get_action_by_state_fast(float* state):
+cdef int get_action_by_state_fast(float* state, int level):
   cdef:
     int best_act = -1
     float best_val = -1e9
@@ -60,7 +59,7 @@ cdef int get_action_by_state_fast(float* state):
     int max_a
     
   # Get memory term
-  max_a = max_ac_memory()
+  max_a = max_ac_memory(level)
   
   for act in xrange(n_actions):
     val = calc_reg_for_action(act, state, max_a)
@@ -73,7 +72,7 @@ cdef int get_action_by_state_fast(float* state):
   last_actions[best_act] = 1
   
   # Update memory with best chosen action
-  update_ac_memory(best_act)
+  update_ac_memory(best_act, level)
   
   return best_act
 
@@ -154,18 +153,13 @@ cdef void update_fc_coefs(int j, float score_diff):
     fc_grads[j] = -grad_update * fc_grads[j]
 
 
-cdef void update_ac_memory(int action):
+cdef void update_ac_memory(int action, int level):
   """
   Appends last action into memory 
   """
-  for i in xrange(4):
-    for j in xrange(99):
-      ac_memory[i][j] = ac_memory[i][j+1]
-    ac_memory[i][99] = 0
-  
-  ac_memory[action][99] = 1
+  ac_memory[action][level] = 1
 
-cdef int max_ac_memory():
+cdef int max_ac_memory(int level):
   """
   @Arg: last action
   Calculates which action occured most times in last 100 rounds
@@ -174,9 +168,9 @@ cdef int max_ac_memory():
   cdef int max_a = 0
   for i in xrange(4):
     sum[i] = 0
-    for j in xrange(100):
+    for j in xrange(level, level + memory_length):
       sum[i] = sum[i] + ac_memory[i][j]
-    if max_a < sum[i]:
+    if sum[max_a] < sum[i]:
       max_a = i
   return max_a
   
@@ -193,6 +187,7 @@ def run_bbox():
     float* state
     int action, has_next = 1
     float score = 0
+    int level
     
   load_squared_coefs("coefs_squared.txt")
   with open('acs.bin','rb') as fp:
@@ -209,55 +204,59 @@ def run_bbox():
   prepare_bbox()
   while has_next:
     state = bbox.c_get_state()
-    action = get_action_by_state_fast(state)
+    level = bbox.c_get_time()
+    action = get_action_by_state_fast(state, level)
     has_next = bbox.c_do_action(action)
   score = bbox.c_get_score()
   scores.append(score)
   bbox.finish()
   has_next = 1
   
-  for t in xrange(4):
-    print '############ Iteration: {}  Score: {} ############'.format(t, score)
-    
-    for i in xrange(4):
-      for j in xrange(4):
-        start = time.time()
-        
-        for _ in xrange(recurrent_deep_iterations):
-          # ac[i][j] += ac_grads[i][j]
-          ac_memory_coefs[i][j] = ac_memory_coefs[i][j] + ac_memory_grads[i][j]
-          prepare_bbox()
-
-          while has_next:
-            state = bbox.c_get_state()
-            action = get_action_by_state_fast(state)
-            has_next = bbox.c_do_action(action)
-
-          end = time.time()
-          score_diff = bbox.c_get_score() - score
-          score = bbox.c_get_score()
+  if True:
+    for t in xrange(4):
+      print '############ Iteration: {}  Score: {} ############'.format(t, score)
+      
+      for i in xrange(4):
+        for j in xrange(4):
+          start = time.time()
           
-          #update_ac_coefs(i, j, score_diff)
-          update_ac_memory_coefs(i, j, score_diff)
-          bbox.finish()
-          has_next = 1
-        
-        print 'Time: ' + str(end - start)
-        print '##### AC action: {}   state: {}  grad: {} ######'.format(i, j, ac_memory_grads[i][j])
-    for pr in xrange(4):
-      for pr2 in xrange(4):
-        print ac_memory_coefs[pr][pr2]
-        #print 'Score diff: ' + str(score_diff)
-    
-    
+          for _ in xrange(recurrent_deep_iterations):
+            # ac[i][j] += ac_grads[i][j]
+            ac_memory_coefs[i][j] = ac_memory_coefs[i][j] + ac_memory_grads[i][j]
+            prepare_bbox()
+
+            while has_next:
+              state = bbox.c_get_state()
+              level = bbox.c_get_time()
+              action = get_action_by_state_fast(state, level)
+              has_next = bbox.c_do_action(action)
+
+            end = time.time()
+            score_diff = bbox.c_get_score() - score
+            score = bbox.c_get_score()
+            
+            #update_ac_coefs(i, j, score_diff)
+            update_ac_memory_coefs(i, j, score_diff)
+            bbox.finish()
+            has_next = 1
+          
+          print 'Time: ' + str(end - start)
+          print '##### AC action: {}   state: {}  grad: {} ######'.format(i, j, ac_memory_grads[i][j])
+      for pr in xrange(4):
+        for pr2 in xrange(4):
+          print ac_memory_coefs[pr][pr2]
+          #print 'Score diff: ' + str(score_diff)
+      
+      
     scores.append(score)
-  
-  amc = np.zeros((4,4))
-  for pr in xrange(4):
-      for pr2 in xrange(4):
-        amc[pr][pr2] = ac_memory_coefs[pr][pr2]
-  with open('acs_mem_2.bin','wb') as fp:
-    cPickle.dump(amc,fp)
+    
+    amc = np.zeros((4,4))
+    for pr in xrange(4):
+        for pr2 in xrange(4):
+          amc[pr][pr2] = ac_memory_coefs[pr][pr2]
+    print 'Saving results'
+    with open('acs_mem_3.bin','wb') as fp:
+      cPickle.dump(amc,fp)
     
   
   print '###### Overall scores'
