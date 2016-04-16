@@ -27,7 +27,9 @@ def get_action_by_state_fast(state):
   for act in xrange(n_actions):
     last_actions[act] = 0
   last_actions[best_act] = 1
+  
   update_ac_memory()
+  
   return best_act
   
 n_features = 36
@@ -61,20 +63,29 @@ def update_ac_memory():
   """
   Appends last action into memory 
   """
+  global ac_memory
+  global last_actions
   ac_memory[:,0:99] = ac_memory[:,1:100]
   ac_memory[:,99] = last_actions
+
 
 def max_ac_memory():
   """
   @Arg: last action
   Calculates which action occured most times in last 100 rounds
   """
-  return np.argmax(np.sum(ac_memory, axis=1))
+  sum = np.zeros(4)
+  max_a = 0
+  for i in xrange(4):
+    sum[i] = np.sum(ac_memory[i,:])
+    if max_a < sum[i]:
+      max_a = i
+  return max_a
 
   
 def calc_reg_for_action(action, state, max_a):
   sq_state = np.multiply(state, state)
-  
+  global ac_memory_coefs
   return np.dot(cc[action], sq_state) + np.dot(c[action], state) + fc[action] + np.dot(ac[action], last_actions) + ac_memory_coefs[action][max_a]
  
 def run_bbox():
@@ -87,12 +98,12 @@ def run_bbox():
 
   for i in xrange(4):
     for j in xrange(4):
-      ac[i, j] = loaded_ac[i][j]
+      ac[i][j] = loaded_ac[i][j]
     
   with open('acs_mem_2.bin','rb') as fp:
     loaded_ac_m = cPickle.load(fp)
   
-  
+  global ac_memory_coefs
   for i in xrange(4):
     for j in xrange(4):
       ac_memory_coefs[i][j] = loaded_ac_m[i][j]
