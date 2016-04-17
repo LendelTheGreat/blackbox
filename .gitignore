@@ -1,1 +1,4 @@
 bot.py
+*.zip
+*.pyc
+*.c
