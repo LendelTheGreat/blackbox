@@ -3,13 +3,13 @@ import numpy as np
 import time
 from random import *
 import cPickle
-
 ac = np.zeros((4, 4))
+
 cc = np.zeros((4, 36))
 c = np.zeros((4, 36))
 fc = np.zeros(4)
 ac_memory_coefs = np.zeros((4,4))
-memory_length = 5
+memory_length = 1000
 
 ac_memory = np.zeros((4,1258935))
 last_actions = np.zeros(4)
@@ -74,7 +74,7 @@ def max_ac_memory(level):
   sum = np.zeros(4)
   max_a = 0
   for i in xrange(4):
-    sum[i] = np.sum(ac_memory[i,level:level+memory_length])
+    sum[i] = np.sum(ac_memory[i,level-memory_length:level])
     if sum[max_a] < sum[i]:
       max_a = i
   return max_a

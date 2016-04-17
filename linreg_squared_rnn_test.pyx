@@ -141,7 +141,7 @@ def run_bbox():
   for i in xrange(4):
     for j in xrange(4):
       ac[i][j] = loaded_ac[i][j]
-    print ac[i]
+    # print ac[i]
     
     
   # Initial score save

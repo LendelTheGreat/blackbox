@@ -9,7 +9,7 @@ import cPickle
 recurrent_deep_iterations = 5
 cdef float last_actions[4]
 
-cdef int memory_length = 5
+cdef int memory_length = 10
 cdef float ac_memory[4][1258935]
 cdef float ac_memory_coefs[4][4]
 cdef float ac_memory_grads[4][4]
@@ -168,7 +168,7 @@ cdef int max_ac_memory(int level):
   cdef int max_a = 0
   for i in xrange(4):
     sum[i] = 0
-    for j in xrange(level, level + memory_length):
+    for j in xrange(level - memory_length, level):
       sum[i] = sum[i] + ac_memory[i][j]
     if sum[max_a] < sum[i]:
       max_a = i
