@@ -1,3 +1,8 @@
+# What Nantas said
+- Build features: autoencoders on 10-100 states, then use them as features for a simple model. 
+- Train: perhaps Q-learning idea? 
+- 
+
 # To do
 - Think about how to implement online learning: learn while you go through the level (i.e. modify weights by responses in the first half, then cash in on the changes in the second half)
 
