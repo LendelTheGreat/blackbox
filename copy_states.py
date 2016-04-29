@@ -80,9 +80,8 @@ def run_bbox():
   prepare_bbox()
   while has_next:
     state = bbox.get_state()
-    if c < 100000:
-      all_states[c, :] = np.copy(state)
-      c += 1
+    all_states[c, :] = np.copy(state)
+    c += 1
     action = get_action_by_state_fast(state)
     has_next = bbox.do_action(action)
   bbox.finish()
