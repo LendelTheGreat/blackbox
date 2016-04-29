@@ -19,3 +19,11 @@ https://en.wikipedia.org/wiki/Q-learning
  [ 0.18959498, -0.56440568,  0.33902133,  2.06911397],
  [-0.05953684, -0.92938888,  0.26350981,  1.17015839]]
 ```
+
+- Plots of Q-learning trained using binary autoencoded features.
+![Alt text](/plots/Qlearning_convergence.png?raw=true)
+Looks promising!
+
+![Alt text](/plots/histogram_Qlearning.png?raw=true)
+Many states visited 0 times. This is a problem.
+
