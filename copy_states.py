@@ -66,7 +66,7 @@ def run_bbox():
   has_next = 1
   
   load_squared_coefs("coefs_squared.txt")
-  all_states = np.zeros((100000,36))
+  all_states = np.zeros((1258935,36))
   c = 0
   with open('acs.bin','rb') as fp:
     loaded_ac = cPickle.load(fp)
