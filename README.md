@@ -3,9 +3,12 @@
 - Train: perhaps Q-learning idea? 
 - Appareantly Q-learning can be implemented with continuous states as well, instead of binary ones. Let's try this.
 
-# Nantas pointed to cross-entropy papers
-- http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.81.6579&rep=rep1&type=pdf
-- https://hal.inria.fr/inria-00418930/document
+# Papers to read
+- http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.81.6579&rep=rep1&type=pdf - cross-entropy optimization method
+- https://hal.inria.fr/inria-00418930/document - same cross-entropy with more features
+- https://hal.inria.fr/inria-00187997v1/document - automatic feature extraction using genetic programming
+- http://journals.plos.org/ploscompbiol/article/asset?id=10.1371%2Fjournal.pcbi.1000894.PDF - Unsupervised  learning  based  on  the  slowness  principle  (i.e. learning that exploits temporal continuity of real-world stimuli)
+
 
 # To do
 - Think about how to implement online learning: learn while you go through the level (i.e. modify weights by responses in the first half, then cash in on the changes in the second half)
