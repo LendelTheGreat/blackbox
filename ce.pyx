@@ -64,6 +64,7 @@ def run_bbox():
   
   train_scores = []
   test_scores = []
+  best_test = -100000
   
   n_epochs = 100
   n_samples = 100
@@ -137,6 +138,13 @@ def run_bbox():
     
     train_scores.append(np.mean(best_scores))
     test_scores.append(test_score)
+    
+    if test_scores[-1] > best_test:
+      best_test = test_scores[-1]
+      with open('ce_means_besttest.bin', 'wb') as fp:
+        cPickle.dump(means, fp)
+      with open('ce_stds_besttest.bin', 'wb') as fp:
+        cPickle.dump(stds, fp)
     
     # Print stuff
     print 'Epoch {:3d} | train score: {:+9.2f} | test score: {:+9.2f} | time: {:.2f}'.format(epoch, train_scores[-1], test_scores[-1], time.time()-start)
