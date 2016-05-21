@@ -34,3 +34,6 @@ Looks promising!
 ![Alt text](/plots/histogram_Qlearning.png?raw=true)
 Many states visited 0 times. This is a problem.
 
+
+![Alt text](/plots/CE_score.png?raw=true)
+Lots of overfitting happens here, we need to fix that and bumyeah!
